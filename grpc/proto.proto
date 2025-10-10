@@ -1,20 +1,48 @@
 syntax = "proto3";
 option go_package = "github.com/vemolista/itu-distributed-systems-assignment3/v2/grpc";
 
-message MessageRequest {
+message JoinRequest {
+    string username = 1;
+}
+
+message JoinResponse {
     string message = 1;
 }
 
-message MessageResponse {};
 
-message BroadcastRequest {
-    string message = 1;
-    string logical_timestamp = 2;
+message LeaveRequest {
+    string username = 1;
 }
 
-message BroadcastResponse {}
+message LeaveResponse {}
+
+
+message ReceiveMessagesRequest {}
+message ReceiveMessagesRespose {}
+
+message SendMessageRequest {
+    ChatMessage message = 1;
+    int64 logical_timestamp = 2;
+}
+
+message SendMessageResponse {}
+
+
+message ChatMessage {
+    string username = 1;
+    string content = 2;
+    MessageType type = 3;
+}
+
+enum MessageType {
+    USER_MESSAGE = 0;
+    SYSTEM_JOIN = 1;
+    SYSTEM_LEAVE = 2;
+}
 
 service ChitChat {
-    rpc SendMessage (MessageRequest) returns (MessageResponse) {};
-    rpc BroadcastMessage (BroadcastRequest) returns (BroadcastResponse) {};
+    rpc Join(JoinRequest) returns (JoinResponse);
+    rpc Leave(LeaveRequest) returns (LeaveResponse);
+    rpc ReceiveMessages(ReceiveMessagesRequest) returns (stream ReceiveMessagesRespose);
+    rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
 }

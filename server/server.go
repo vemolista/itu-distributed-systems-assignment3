@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"slices"
+	"sync"
 
 	proto "github.com/vemolista/itu-distributed-systems-assignment3/v2/grpc"
 	"google.golang.org/grpc"
@@ -12,16 +14,37 @@ import (
 
 type chitChatServer struct {
 	proto.UnimplementedChitChatServer
+
+	mu            sync.Mutex
+	activeClients []string
 }
 
-func (s *chitChatServer) BroadcastMessage(ctx context.Context, in *proto.BroadcastRequest) (*proto.BroadcastResponse, error) {
-	fmt.Println("Broadcasting message.")
+func (s *chitChatServer) Join(ctx context.Context, in *proto.JoinRequest) (*proto.JoinResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	return nil, nil
+	if slices.Contains(s.activeClients, in.Username) {
+		return nil, fmt.Errorf("duplicate usernames not allowed")
+	}
+
+	s.activeClients = append(s.activeClients, in.Username)
+
+	return &proto.JoinResponse{Message: "Successfully joined."}, nil
+}
+
+func (s *chitChatServer) Leave(ctx context.Context, in *proto.LeaveRequest) (*proto.LeaveResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if !slices.Contains(s.activeClients, in.Username) {
+		return nil, fmt.Errorf("no active client with username %s found", in.Username)
+	}
+
+	return &proto.LeaveResponse{}, nil
 }
 
 func main() {
-	server := &chitChatServer{}
+	server := &chitChatServer{activeClients: make([]string, 0)}
 	server.start()
 }
 
