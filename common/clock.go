@@ -9,6 +9,6 @@ type LamportClock struct {
 func (c *LamportClock) Tick(requestTime int64) int64 {
 	latestTime := max(c.timestamp, requestTime)
 	latestTime += 1
-
+	c.timestamp = latestTime
 	return latestTime
 }
