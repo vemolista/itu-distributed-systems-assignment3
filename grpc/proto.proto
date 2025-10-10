@@ -3,18 +3,22 @@ option go_package = "github.com/vemolista/itu-distributed-systems-assignment3/v2
 
 message JoinRequest {
     string username = 1;
+    int64 logical_timestamp = 2;
 }
 
 message JoinResponse {
-    string message = 1;
+    int64 logical_timestamp = 1;
 }
 
 
 message LeaveRequest {
     string username = 1;
+    int64 logical_timestamp = 2;
 }
 
-message LeaveResponse {}
+message LeaveResponse {
+    int64 logical_timestamp = 1;
+}
 
 
 message ReceiveMessagesRequest {}
@@ -25,7 +29,9 @@ message SendMessageRequest {
     int64 logical_timestamp = 2;
 }
 
-message SendMessageResponse {}
+message SendMessageResponse {
+    int64 logical_timestamp = 1;
+}
 
 
 message ChatMessage {
