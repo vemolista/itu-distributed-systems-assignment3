@@ -44,6 +44,27 @@ func (c *chitChatClient) join() error {
 	return nil
 }
 
+func (c *chitChatClient) sendMessage(input string) error {
+	c.clock.Increment()
+
+	resp, err := c.client.SendMessage(context.Background(), &proto.SendMessageRequest{
+		Message: &proto.ChatMessage{
+			Username: c.username,
+			Content:  input,
+			Type:     proto.MessageType_USER_MESSAGE,
+		},
+		LogicalTimestamp: c.clock.Get(),
+	})
+
+	if err != nil {
+		log.Printf("failed to send message: %v", err)
+		return fmt.Errorf("failed to send message: %v", err)
+	}
+
+	c.clock.Update(resp.LogicalTimestamp)
+	return nil
+}
+
 func main() {
 	conn, err := grpc.NewClient("localhost:5050", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -67,13 +88,6 @@ func main() {
 			continue
 		}
 
-		// client.SendMessage(context.Background(), &proto.SendMessageRequest{
-		// 	Message: &proto.ChatMessage{
-		// 		Content:  input,
-		// 		Username: "john", // TODO
-		// 		Type:     proto.MessageType_USER_MESSAGE,
-		// 	},
-		// 	LogicalTimestamp: 1, // TODO
-		// })
+		client.sendMessage(input)
 	}
 }
