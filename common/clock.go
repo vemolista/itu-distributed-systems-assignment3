@@ -6,9 +6,16 @@ type LamportClock struct {
 	timestamp int64
 }
 
-func (c *LamportClock) Tick(requestTime int64) int64 {
-	latestTime := max(c.timestamp, requestTime)
-	latestTime += 1
-	c.timestamp = latestTime
-	return latestTime
+func (c *LamportClock) Increment() int64 {
+	c.timestamp += 1
+	return c.timestamp
+}
+
+func (c *LamportClock) Update(requestTime int64) int64 {
+	c.timestamp = max(c.timestamp, requestTime) + 1
+	return c.timestamp
+}
+
+func (c *LamportClock) Get() int64 {
+	return c.timestamp
 }
