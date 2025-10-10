@@ -1,5 +1,5 @@
 syntax = "proto3";
-option go_package = "github.com/vemolista/itu-distributed-systems-assignment3/v2/proto";
+option go_package = "github.com/vemolista/itu-distributed-systems-assignment3/v2/grpc";
 
 message MessageRequest {
     string message = 1;
