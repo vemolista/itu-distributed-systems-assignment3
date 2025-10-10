@@ -43,6 +43,12 @@ func (s *chitChatServer) Leave(ctx context.Context, in *proto.LeaveRequest) (*pr
 	return &proto.LeaveResponse{}, nil
 }
 
+func (s *chitChatServer) SendMessage(ctx context.Context, in *proto.SendMessageRequest) (*proto.SendMessageResponse, error) {
+	fmt.Printf("Received message from %s: '%s'\n", in.Message.Username, in.Message.Content)
+
+	return nil, nil
+}
+
 func main() {
 	server := &chitChatServer{activeClients: make([]string, 0)}
 	server.start()
