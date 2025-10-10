@@ -14,7 +14,7 @@ message BroadcastRequest {
 
 message BroadcastResponse {}
 
-service ChitChatService {
+service ChitChat {
     rpc SendMessage (MessageRequest) returns (MessageResponse) {};
     rpc BroadcastMessage (BroadcastRequest) returns (BroadcastResponse) {};
 }
