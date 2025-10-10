@@ -8,6 +8,7 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/vemolista/itu-distributed-systems-assignment3/v2/common"
 	proto "github.com/vemolista/itu-distributed-systems-assignment3/v2/grpc"
 	"google.golang.org/grpc"
 )
@@ -15,11 +16,15 @@ import (
 type chitChatServer struct {
 	proto.UnimplementedChitChatServer
 
+	clock common.LamportClock
+
 	mu            sync.Mutex
 	activeClients []string
 }
 
 func (s *chitChatServer) Join(ctx context.Context, in *proto.JoinRequest) (*proto.JoinResponse, error) {
+	s.clock.Update(in.LogicalTimestamp)
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -29,7 +34,9 @@ func (s *chitChatServer) Join(ctx context.Context, in *proto.JoinRequest) (*prot
 
 	s.activeClients = append(s.activeClients, in.Username)
 
-	return &proto.JoinResponse{Message: "Successfully joined."}, nil
+	return &proto.JoinResponse{
+		LogicalTimestamp: s.clock.Get(),
+	}, nil
 }
 
 func (s *chitChatServer) Leave(ctx context.Context, in *proto.LeaveRequest) (*proto.LeaveResponse, error) {
@@ -50,7 +57,7 @@ func (s *chitChatServer) SendMessage(ctx context.Context, in *proto.SendMessageR
 }
 
 func main() {
-	server := &chitChatServer{activeClients: make([]string, 0)}
+	server := &chitChatServer{activeClients: make([]string, 0), clock: common.NewLamportClock()}
 	server.start()
 }
 
