@@ -50,16 +50,9 @@ func (s *chitChatServer) Leave(ctx context.Context, in *proto.LeaveRequest) (*pr
 }
 
 func (s *chitChatServer) SendMessage(ctx context.Context, in *proto.SendMessageRequest) (*proto.SendMessageResponse, error) {
-	fmt.Printf("Received message from %s: '%s'\n", in.Message.Username, in.Message.Content)
-
 	response := &proto.ReceiveMessagesResponse{
 		Message:          in.Message,
 		LogicalTimestamp: 1, // TODO
-	}
-
-	fmt.Printf("%v\n", len(s.activeClients))
-	for k := range s.activeClients {
-		fmt.Println(k)
 	}
 
 	s.mu.Lock()
@@ -81,17 +74,30 @@ func (s *chitChatServer) SendMessage(ctx context.Context, in *proto.SendMessageR
 
 func (s *chitChatServer) ReceiveMessages(in *proto.ReceiveMessagesRequest, stream proto.ChitChat_ReceiveMessagesServer) error {
 	s.mu.Lock()
-	fmt.Printf("%s", in.Username)
-	fmt.Printf("%v\n", len(s.activeClients))
 	s.activeClients[in.Username] = stream
-	fmt.Printf("%v\n", len(s.activeClients))
 	s.mu.Unlock()
+
+	s.SendMessage(context.Background(), &proto.SendMessageRequest{
+		Message: &proto.ChatMessage{
+			Type:    proto.MessageType_SYSTEM_JOIN,
+			Content: fmt.Sprintf("Participant %s has joined Chit Chat at logical time %d", in.Username, s.clock.Get()),
+		},
+		LogicalTimestamp: 1, // TODO
+	})
 
 	<-stream.Context().Done()
 
 	s.mu.Lock()
 	delete(s.activeClients, in.Username)
 	s.mu.Unlock()
+
+	s.SendMessage(context.Background(), &proto.SendMessageRequest{
+		Message: &proto.ChatMessage{
+			Type:    proto.MessageType_SYSTEM_JOIN,
+			Content: fmt.Sprintf("Participant %s has left Chit Chat at logical time %d", in.Username, s.clock.Get()),
+		},
+		LogicalTimestamp: 1, // TODO
+	})
 
 	return nil
 }

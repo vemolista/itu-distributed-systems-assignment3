@@ -35,7 +35,7 @@ func newChitChatClient(conn *grpc.ClientConn, username string) *chitChatClient {
 func (c *chitChatClient) join() error {
 	c.clock.Increment()
 
-	resp, err := c.client.Join(context.Background(), &proto.JoinRequest{Username: "john", LogicalTimestamp: c.clock.Get()})
+	resp, err := c.client.Join(context.Background(), &proto.JoinRequest{Username: c.username, LogicalTimestamp: c.clock.Get()})
 	if err != nil {
 		log.Fatalf("failed to join: %v", err)
 		return err
@@ -82,6 +82,14 @@ func (c *chitChatClient) waitForInput() {
 	}
 }
 
+func formatMessage(msg *proto.ReceiveMessagesResponse) string {
+	if msg.Message.Type == proto.MessageType_SYSTEM_JOIN || msg.Message.Type == proto.MessageType_SYSTEM_LEAVE {
+		return fmt.Sprintf("[SYSTEM] %d: %s\n", msg.LogicalTimestamp, msg.Message.Content)
+	}
+
+	return fmt.Sprintf("[%s] %d: %s\n", msg.Message.Username, msg.LogicalTimestamp, msg.Message.Content)
+}
+
 func (c *chitChatClient) receiveMessages() {
 	stream, err := c.client.ReceiveMessages(context.Background(), &proto.ReceiveMessagesRequest{Username: c.username})
 	if err != nil {
@@ -99,13 +107,12 @@ func (c *chitChatClient) receiveMessages() {
 			continue
 		}
 
-		fmt.Printf("[%s] %d: %s\n", resp.Message.Username, resp.LogicalTimestamp, resp.Message.Content)
+		fmt.Printf("%s", formatMessage(resp))
 	}
 }
 
 func main() {
 	conn, err := grpc.NewClient("localhost:5050", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	// conn, err := grpc.NewClient("127.0.0.1:56479", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("failed to create client: %v", err)
 	}
