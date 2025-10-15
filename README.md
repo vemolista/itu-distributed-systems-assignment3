@@ -18,6 +18,3 @@ $ go run client/client.go
 # To create a server, open a new terminal and run
 $ go run server/server.go
 ```
-
-> [!CAUTION]
-> The client's name is currently hardcoded to "john". Before creating more than one client is possible, we have to get rid of the username, and/or ask for it before the client attempts to join.

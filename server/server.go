@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"slices"
 	"sync"
 
 	"github.com/vemolista/itu-distributed-systems-assignment3/v2/common"
@@ -19,7 +18,7 @@ type chitChatServer struct {
 	clock common.LamportClock
 
 	mu            sync.Mutex
-	activeClients []string
+	activeClients map[string]proto.ChitChat_ReceiveMessagesServer
 }
 
 func (s *chitChatServer) Join(ctx context.Context, in *proto.JoinRequest) (*proto.JoinResponse, error) {
@@ -28,11 +27,9 @@ func (s *chitChatServer) Join(ctx context.Context, in *proto.JoinRequest) (*prot
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if slices.Contains(s.activeClients, in.Username) {
+	if _, ok := s.activeClients[in.Username]; ok {
 		return nil, fmt.Errorf("duplicate usernames not allowed")
 	}
-
-	s.activeClients = append(s.activeClients, in.Username)
 
 	return &proto.JoinResponse{
 		LogicalTimestamp: s.clock.Get(),
@@ -43,21 +40,73 @@ func (s *chitChatServer) Leave(ctx context.Context, in *proto.LeaveRequest) (*pr
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if !slices.Contains(s.activeClients, in.Username) {
+	if _, ok := s.activeClients[in.Username]; !ok {
 		return nil, fmt.Errorf("no active client with username %s found", in.Username)
 	}
+
+	delete(s.activeClients, in.Username)
 
 	return &proto.LeaveResponse{}, nil
 }
 
 func (s *chitChatServer) SendMessage(ctx context.Context, in *proto.SendMessageRequest) (*proto.SendMessageResponse, error) {
-	fmt.Printf("Received message from %s: '%s'\n", in.Message.Username, in.Message.Content)
+	response := &proto.ReceiveMessagesResponse{
+		Message:          in.Message,
+		LogicalTimestamp: 1, // TODO
+	}
 
-	return nil, nil
+	s.mu.Lock()
+	for k, stream := range s.activeClients {
+		if k == in.Message.Username {
+			continue
+		}
+
+		if err := stream.Send(response); err != nil {
+			log.Printf("failed to send message to client '%s': %v", k, err)
+		}
+	}
+	s.mu.Unlock()
+
+	return &proto.SendMessageResponse{
+		LogicalTimestamp: 1, // TODO
+	}, nil
+}
+
+func (s *chitChatServer) ReceiveMessages(in *proto.ReceiveMessagesRequest, stream proto.ChitChat_ReceiveMessagesServer) error {
+	s.mu.Lock()
+	s.activeClients[in.Username] = stream
+	s.mu.Unlock()
+
+	s.SendMessage(context.Background(), &proto.SendMessageRequest{
+		Message: &proto.ChatMessage{
+			Type:    proto.MessageType_SYSTEM_JOIN,
+			Content: fmt.Sprintf("Participant %s has joined Chit Chat at logical time %d", in.Username, s.clock.Get()),
+		},
+		LogicalTimestamp: 1, // TODO
+	})
+
+	<-stream.Context().Done()
+
+	s.mu.Lock()
+	delete(s.activeClients, in.Username)
+	s.mu.Unlock()
+
+	s.SendMessage(context.Background(), &proto.SendMessageRequest{
+		Message: &proto.ChatMessage{
+			Type:    proto.MessageType_SYSTEM_JOIN,
+			Content: fmt.Sprintf("Participant %s has left Chit Chat at logical time %d", in.Username, s.clock.Get()),
+		},
+		LogicalTimestamp: 1, // TODO
+	})
+
+	return nil
 }
 
 func main() {
-	server := &chitChatServer{activeClients: make([]string, 0), clock: common.NewLamportClock()}
+	server := &chitChatServer{
+		activeClients: make(map[string]proto.ChitChat_ReceiveMessagesServer, 0),
+		clock:         common.NewLamportClock(),
+	}
 	server.start()
 }
 

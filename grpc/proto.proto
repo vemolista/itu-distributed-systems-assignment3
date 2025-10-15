@@ -21,8 +21,14 @@ message LeaveResponse {
 }
 
 
-message ReceiveMessagesRequest {}
-message ReceiveMessagesRespose {}
+message ReceiveMessagesRequest {
+    string username = 1;
+}
+
+message ReceiveMessagesResponse {
+    ChatMessage message = 1;
+    int64 logical_timestamp = 2;
+}
 
 message SendMessageRequest {
     ChatMessage message = 1;
@@ -49,6 +55,6 @@ enum MessageType {
 service ChitChat {
     rpc Join(JoinRequest) returns (JoinResponse);
     rpc Leave(LeaveRequest) returns (LeaveResponse);
-    rpc ReceiveMessages(ReceiveMessagesRequest) returns (stream ReceiveMessagesRespose);
+    rpc ReceiveMessages(ReceiveMessagesRequest) returns (stream ReceiveMessagesResponse);
     rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
 }
