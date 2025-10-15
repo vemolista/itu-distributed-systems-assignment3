@@ -99,7 +99,7 @@ func (c *chitChatClient) receiveMessages() {
 			continue
 		}
 
-		fmt.Println(resp.Message.Content)
+		fmt.Printf("[%s] %d: %s\n", resp.Message.Username, resp.LogicalTimestamp, resp.Message.Content)
 	}
 }
 
