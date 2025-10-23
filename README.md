@@ -25,8 +25,8 @@ protoc --go_out=. \
   grpc/proto.proto
 ```
 
-Running the application
- 
+Running the application:
+
 ```sh
 # To create a client, open a new terminal and run
 $ go run client/client.go
