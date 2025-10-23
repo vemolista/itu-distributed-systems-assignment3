@@ -34,7 +34,6 @@ func newChitChatClient(conn *grpc.ClientConn, username string) *chitChatClient {
 
 func (c *chitChatClient) join() error {
 	c.clock.Increment()
-	fmt.Println("incremented in join")
 
 	resp, err := c.client.Join(context.Background(), &proto.JoinRequest{
 		Username:         c.username,
@@ -52,7 +51,6 @@ func (c *chitChatClient) join() error {
 
 func (c *chitChatClient) sendMessage(input string) error {
 	c.clock.Increment()
-	fmt.Println("incremented in send")
 
 	resp, err := c.client.SendMessage(context.Background(), &proto.SendMessageRequest{
 		Message: &proto.ChatMessage{
@@ -98,7 +96,6 @@ func formatMessage(msg *proto.ReceiveMessagesResponse) string {
 
 func (c *chitChatClient) receiveMessages() {
 	c.clock.Increment()
-	fmt.Println("incremented in receive")
 
 	stream, err := c.client.ReceiveMessages(
 		context.Background(),
