@@ -37,6 +37,8 @@ func (s *chitChatServer) Join(ctx context.Context, in *proto.JoinRequest) (*prot
 }
 
 func (s *chitChatServer) Leave(ctx context.Context, in *proto.LeaveRequest) (*proto.LeaveResponse, error) {
+	s.clock.Update(in.LogicalTimestamp)
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -50,29 +52,33 @@ func (s *chitChatServer) Leave(ctx context.Context, in *proto.LeaveRequest) (*pr
 }
 
 func (s *chitChatServer) SendMessage(ctx context.Context, in *proto.SendMessageRequest) (*proto.SendMessageResponse, error) {
+	s.clock.Update(in.LogicalTimestamp)
+
 	response := &proto.ReceiveMessagesResponse{
 		Message:          in.Message,
-		LogicalTimestamp: 1, // TODO
+		LogicalTimestamp: s.clock.Get(),
 	}
 
 	s.mu.Lock()
-	for k, stream := range s.activeClients {
-		if k == in.Message.Username {
+	for username, stream := range s.activeClients {
+		if username == in.Message.Username {
 			continue
 		}
 
 		if err := stream.Send(response); err != nil {
-			log.Printf("failed to send message to client '%s': %v", k, err)
+			log.Printf("failed to send message to client '%s': %v", username, err)
 		}
 	}
 	s.mu.Unlock()
 
 	return &proto.SendMessageResponse{
-		LogicalTimestamp: 1, // TODO
+		LogicalTimestamp: s.clock.Get(),
 	}, nil
 }
 
 func (s *chitChatServer) ReceiveMessages(in *proto.ReceiveMessagesRequest, stream proto.ChitChat_ReceiveMessagesServer) error {
+	s.clock.Update(in.LogicalTimestamp)
+
 	s.mu.Lock()
 	s.activeClients[in.Username] = stream
 	s.mu.Unlock()
@@ -82,7 +88,7 @@ func (s *chitChatServer) ReceiveMessages(in *proto.ReceiveMessagesRequest, strea
 			Type:    proto.MessageType_SYSTEM_JOIN,
 			Content: fmt.Sprintf("Participant %s has joined Chit Chat at logical time %d", in.Username, s.clock.Get()),
 		},
-		LogicalTimestamp: 1, // TODO
+		LogicalTimestamp: s.clock.Get(),
 	})
 
 	<-stream.Context().Done()
@@ -91,12 +97,14 @@ func (s *chitChatServer) ReceiveMessages(in *proto.ReceiveMessagesRequest, strea
 	delete(s.activeClients, in.Username)
 	s.mu.Unlock()
 
+	s.clock.Increment()
+
 	s.SendMessage(context.Background(), &proto.SendMessageRequest{
 		Message: &proto.ChatMessage{
-			Type:    proto.MessageType_SYSTEM_JOIN,
+			Type:    proto.MessageType_SYSTEM_LEAVE,
 			Content: fmt.Sprintf("Participant %s has left Chit Chat at logical time %d", in.Username, s.clock.Get()),
 		},
-		LogicalTimestamp: 1, // TODO
+		LogicalTimestamp: s.clock.Get(),
 	})
 
 	return nil

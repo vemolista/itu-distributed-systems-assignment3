@@ -91,7 +91,7 @@ func formatMessage(msg *proto.ReceiveMessagesResponse) string {
 }
 
 func (c *chitChatClient) receiveMessages() {
-	stream, err := c.client.ReceiveMessages(context.Background(), &proto.ReceiveMessagesRequest{Username: c.username})
+	stream, err := c.client.ReceiveMessages(context.Background(), &proto.ReceiveMessagesRequest{Username: c.username, LogicalTimestamp: c.clock.Get()})
 	if err != nil {
 		log.Fatalf("failed to receive messages: %v", err)
 	}
