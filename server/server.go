@@ -53,6 +53,7 @@ func (s *chitChatServer) Leave(ctx context.Context, in *proto.LeaveRequest) (*pr
 
 func (s *chitChatServer) SendMessage(ctx context.Context, in *proto.SendMessageRequest) (*proto.SendMessageResponse, error) {
 	s.clock.Update(in.LogicalTimestamp)
+	fmt.Println("updated in send")
 
 	response := &proto.ReceiveMessagesResponse{
 		Message:          in.Message,
@@ -78,6 +79,7 @@ func (s *chitChatServer) SendMessage(ctx context.Context, in *proto.SendMessageR
 
 func (s *chitChatServer) ReceiveMessages(in *proto.ReceiveMessagesRequest, stream proto.ChitChat_ReceiveMessagesServer) error {
 	s.clock.Update(in.LogicalTimestamp)
+	fmt.Println("updated in receive")
 
 	s.mu.Lock()
 	s.activeClients[in.Username] = stream
@@ -85,8 +87,12 @@ func (s *chitChatServer) ReceiveMessages(in *proto.ReceiveMessagesRequest, strea
 
 	s.SendMessage(context.Background(), &proto.SendMessageRequest{
 		Message: &proto.ChatMessage{
-			Type:    proto.MessageType_SYSTEM_JOIN,
-			Content: fmt.Sprintf("Participant %s has joined Chit Chat at logical time %d", in.Username, s.clock.Get()),
+			Type: proto.MessageType_SYSTEM_JOIN,
+			Content: fmt.Sprintf(
+				"Participant %s has joined Chit Chat at logical time %d",
+				in.Username,
+				s.clock.Get(),
+			),
 		},
 		LogicalTimestamp: s.clock.Get(),
 	})
@@ -98,6 +104,7 @@ func (s *chitChatServer) ReceiveMessages(in *proto.ReceiveMessagesRequest, strea
 	s.mu.Unlock()
 
 	s.clock.Increment()
+	fmt.Println("incremented in receive (client left)")
 
 	s.SendMessage(context.Background(), &proto.SendMessageRequest{
 		Message: &proto.ChatMessage{
