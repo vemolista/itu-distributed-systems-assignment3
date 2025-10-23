@@ -35,7 +35,11 @@ func newChitChatClient(conn *grpc.ClientConn, username string) *chitChatClient {
 func (c *chitChatClient) join() error {
 	c.clock.Increment()
 
-	resp, err := c.client.Join(context.Background(), &proto.JoinRequest{Username: c.username, LogicalTimestamp: c.clock.Get()})
+	resp, err := c.client.Join(context.Background(), &proto.JoinRequest{
+		Username:         c.username,
+		LogicalTimestamp: c.clock.Get(),
+	})
+
 	if err != nil {
 		log.Fatalf("failed to join: %v", err)
 		return err
@@ -91,7 +95,16 @@ func formatMessage(msg *proto.ReceiveMessagesResponse) string {
 }
 
 func (c *chitChatClient) receiveMessages() {
-	stream, err := c.client.ReceiveMessages(context.Background(), &proto.ReceiveMessagesRequest{Username: c.username, LogicalTimestamp: c.clock.Get()})
+	c.clock.Increment()
+
+	stream, err := c.client.ReceiveMessages(
+		context.Background(),
+		&proto.ReceiveMessagesRequest{
+			Username:         c.username,
+			LogicalTimestamp: c.clock.Get(),
+		},
+	)
+
 	if err != nil {
 		log.Fatalf("failed to receive messages: %v", err)
 	}
@@ -107,6 +120,7 @@ func (c *chitChatClient) receiveMessages() {
 			continue
 		}
 
+		c.clock.Update(resp.LogicalTimestamp)
 		fmt.Printf("%s", formatMessage(resp))
 	}
 }
