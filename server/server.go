@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 	"sync"
 
 	"github.com/vemolista/itu-distributed-systems-assignment3/v2/common"
@@ -115,7 +117,20 @@ func main() {
 		activeClients: make(map[string]proto.ChitChat_ReceiveMessagesServer, 0),
 		clock:         common.NewLamportClock(),
 	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for sig := range c {
+			log.Printf("server shutdown: %s (timestamp: %d)\n", sig.String(), server.clock.Get())
+			fmt.Printf("server shutdown: %s (timestamp: %d)\n", sig.String(), server.clock.Get())
+
+			os.Exit(0)
+		}
+	}()
+
 	server.start()
+
 }
 
 func (s *chitChatServer) start() {

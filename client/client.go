@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/signal"
 	"unicode/utf8"
 
 	"google.golang.org/grpc"
@@ -49,6 +50,26 @@ func (c *chitChatClient) join() error {
 	return nil
 }
 
+func (c *chitChatClient) leave() error {
+	c.clock.Increment()
+
+	log.Printf("[client %s]: requesting to leave (timestamp: %d)\n", c.username, c.clock.Get())
+
+	resp, err := c.client.Leave(context.Background(), &proto.LeaveRequest{
+		Username:         c.username,
+		LogicalTimestamp: c.clock.Get(),
+	})
+	c.clock.Update(resp.LogicalTimestamp)
+
+	if err != nil {
+		log.Fatalf("[client %s]: failed to leave: %v", c.username, err)
+		return err
+	}
+
+	log.Printf("[client %s]: left (timestamp: %d)\n", c.username, c.clock.Get())
+	return nil
+}
+
 func (c *chitChatClient) sendMessage(input string) error {
 	c.clock.Increment()
 
@@ -60,13 +81,14 @@ func (c *chitChatClient) sendMessage(input string) error {
 		},
 		LogicalTimestamp: c.clock.Get(),
 	})
+	c.clock.Update(resp.LogicalTimestamp)
 
 	if err != nil {
 		log.Printf("failed to send message: %v", err)
 		return fmt.Errorf("failed to send message: %v", err)
 	}
+	log.Printf("[client %s]: message sent: (timestamp: %d) (content: %s)\n", c.username, c.clock.Get(), input)
 
-	c.clock.Update(resp.LogicalTimestamp)
 	return nil
 }
 
@@ -108,6 +130,7 @@ func (c *chitChatClient) receiveMessages() {
 	if err != nil {
 		log.Fatalf("failed to receive messages: %v", err)
 	}
+	log.Printf("[client %s]: receiving messages: (timestamp: %d)\n", c.username, c.clock.Get())
 
 	for {
 		resp, err := stream.Recv()
@@ -122,10 +145,12 @@ func (c *chitChatClient) receiveMessages() {
 
 		c.clock.Update(resp.LogicalTimestamp)
 		fmt.Printf("%s", formatMessage(resp))
+		log.Printf("[client %s] message received: (timestamp: %d) (content: %s\n)", c.username, c.clock.Get(), resp.Message.Content)
 	}
 }
 
 func main() {
+
 	conn, err := grpc.NewClient("localhost:5050", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("failed to create client: %v", err)
@@ -138,10 +163,24 @@ func main() {
 	username := scanner.Text()
 
 	client := newChitChatClient(conn, username)
+	log.Printf("[client %s]: starting new client: (timestamp: %d)\n", client.username, client.clock.Get())
 
 	if err = client.join(); err != nil {
 		log.Fatalf("failed to join: %v", err)
 	}
+	log.Printf("[client %s]: joined: (timestamp: %d)\n", client.username, client.clock.Get())
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for sig := range c {
+			log.Printf("[client %s] shutting down: %s\n", client.username, sig.String())
+
+			client.leave()
+
+			os.Exit(0)
+		}
+	}()
 
 	go client.receiveMessages()
 	client.waitForInput()
