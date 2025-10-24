@@ -20,7 +20,7 @@ type Client struct {
 func (Server) component() {}
 func (Client) component() {}
 
-func format(c Component, event string, message string, timestamp int32) string {
+func format(c Component, event string, message string, timestamp int64) string {
 	switch v := c.(type) {
 	case Server:
 		return fmt.Sprintf("[server] (event: %s) (logical timestamp: %d) (message: %s)\n", event, timestamp, message)
@@ -31,6 +31,6 @@ func format(c Component, event string, message string, timestamp int32) string {
 	}
 }
 
-func Log(c Component, event, message string, timestamp int32) {
+func Log(c Component, event, message string, timestamp int64) {
 	log.Printf("%s", format(c, event, message, timestamp))
 }
