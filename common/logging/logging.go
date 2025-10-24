@@ -14,7 +14,7 @@ type Server struct {
 }
 
 type Client struct {
-	username string
+	Username string
 }
 
 func (Server) component() {}
@@ -25,7 +25,7 @@ func format(c Component, event string, message string, timestamp int64) string {
 	case Server:
 		return fmt.Sprintf("[server] (event: %s) (logical timestamp: %d) (message: %s)\n", event, timestamp, message)
 	case Client:
-		return fmt.Sprintf("[client '%s'] (event: %s) (logical timestamp: %d) (message: %s)\n", v.username, event, timestamp, message)
+		return fmt.Sprintf("[client '%s'] (event: %s) (logical timestamp: %d) (message: %s)\n", v.Username, event, timestamp, message)
 	default:
 		return fmt.Sprintf("[unknown] (event: %s) (logical timestamp: %d) (message: %s)\n", event, timestamp, message)
 	}
