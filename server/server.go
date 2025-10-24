@@ -140,6 +140,7 @@ func main() {
 	go func() {
 		for sig := range c {
 			msg := fmt.Sprintf("signal: '%s' received, shutting down", sig.String())
+			chitChatServer.clock.Increment()
 
 			logging.Log(logging.Server{}, "os.Interrupt", msg, chitChatServer.clock.Get())
 
