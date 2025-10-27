@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"github.com/vemolista/itu-distributed-systems-assignment3/v2/common"
-	"github.com/vemolista/itu-distributed-systems-assignment3/v2/common/logging"
 	proto "github.com/vemolista/itu-distributed-systems-assignment3/v2/grpc"
 	"google.golang.org/grpc"
 )
@@ -27,15 +26,12 @@ type chitChatServer struct {
 
 func (s *chitChatServer) Join(ctx context.Context, in *proto.JoinRequest) (*proto.JoinResponse, error) {
 	s.clock.Update(in.LogicalTimestamp)
-	logging.Log(logging.Server{}, "join", "join request received", s.clock.Get())
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if _, ok := s.activeClients[in.Username]; ok {
 		msg := "duplicate usernames not allowed"
-
-		logging.Log(logging.Server{}, "join", msg, s.clock.Get())
 		return nil, fmt.Errorf("%s", msg)
 	}
 
@@ -46,15 +42,12 @@ func (s *chitChatServer) Join(ctx context.Context, in *proto.JoinRequest) (*prot
 
 func (s *chitChatServer) Leave(ctx context.Context, in *proto.LeaveRequest) (*proto.LeaveResponse, error) {
 	s.clock.Update(in.LogicalTimestamp)
-	logging.Log(logging.Server{}, "leave", "leave request received", s.clock.Get())
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if _, ok := s.activeClients[in.Username]; !ok {
 		msg := fmt.Sprintf("no active client with username %s found", in.Username)
-		logging.Log(logging.Server{}, "leave", msg, s.clock.Get())
-
 		return nil, fmt.Errorf("%s", msg)
 	}
 
@@ -65,8 +58,6 @@ func (s *chitChatServer) Leave(ctx context.Context, in *proto.LeaveRequest) (*pr
 
 func (s *chitChatServer) SendMessage(ctx context.Context, in *proto.SendMessageRequest) (*proto.SendMessageResponse, error) {
 	s.clock.Update(in.LogicalTimestamp)
-	msg := fmt.Sprintf("send message request received, content: '%s', type: %s", in.Message.Content, in.Message.Type.String())
-	logging.Log(logging.Server{}, "send message", msg, s.clock.Get())
 
 	response := &proto.ReceiveMessagesResponse{
 		Message:          in.Message,
@@ -105,7 +96,6 @@ func (s *chitChatServer) SendMessage(ctx context.Context, in *proto.SendMessageR
 
 func (s *chitChatServer) ReceiveMessages(in *proto.ReceiveMessagesRequest, stream proto.ChitChat_ReceiveMessagesServer) error {
 	s.clock.Update(in.LogicalTimestamp)
-	logging.Log(logging.Server{}, "receive messages", "receives messages request received", s.clock.Get())
 
 	s.mu.Lock()
 	s.activeClients[in.Username] = stream
@@ -127,15 +117,10 @@ func (s *chitChatServer) ReceiveMessages(in *proto.ReceiveMessagesRequest, strea
 	<-stream.Context().Done()
 
 	s.clock.Increment()
-	logging.Log(logging.Server{}, "receive messages", "receives messages stream ended", s.clock.Get())
 
 	s.mu.Lock()
 	delete(s.activeClients, in.Username)
 	s.mu.Unlock()
-
-	// Log broadcasting leave message
-	s.logger.Printf("[component: server] [client: %s] [event: BROADCAST_LEAVE] [timestamp: %d] [content: broadcasting leave message]",
-		in.Username, s.clock.Get())
 
 	// Log broadcasting leave message
 	s.logger.Printf("[component: server] [client: %s] [event: BROADCAST_LEAVE] [timestamp: %d] [content: broadcasting leave message]",
@@ -167,7 +152,7 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	proto.RegisterChitChatServer(grpcServer, chitChatServer)
+	proto.RegisterChitChatServer(grpcServer, server)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)

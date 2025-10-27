@@ -14,7 +14,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/vemolista/itu-distributed-systems-assignment3/v2/common"
-	"github.com/vemolista/itu-distributed-systems-assignment3/v2/common/logging"
 	proto "github.com/vemolista/itu-distributed-systems-assignment3/v2/grpc"
 )
 
@@ -39,13 +38,11 @@ func newChitChatClient(conn *grpc.ClientConn, username string, logger *log.Logge
 func (c *chitChatClient) join(logger *log.Logger) error {
 	c.clock.Increment()
 
-	logging.Log(logging.Client{Username: c.username}, "join", "sending join request", c.clock.Get())
 	resp, err := c.client.Join(context.Background(), &proto.JoinRequest{
 		Username:         c.username,
 		LogicalTimestamp: c.clock.Get(),
 	})
 	c.clock.Update(resp.LogicalTimestamp)
-	logging.Log(logging.Client{Username: c.username}, "join", "join request response received", c.clock.Get())
 
 	if err != nil {
 		logger.Fatalf("failed to join: %v", err)
@@ -69,7 +66,6 @@ func (c *chitChatClient) leave(logger *log.Logger) error {
 		LogicalTimestamp: c.clock.Get(),
 	})
 	c.clock.Update(resp.LogicalTimestamp)
-	logging.Log(logging.Client{Username: c.username}, "leave", "leave request response received", c.clock.Get())
 
 	if err != nil {
 		logger.Fatalf("[client %s]: failed to leave: %v", c.username, err)
@@ -86,9 +82,6 @@ func (c *chitChatClient) leave(logger *log.Logger) error {
 func (c *chitChatClient) sendMessage(input string, logger *log.Logger) error {
 	c.clock.Increment()
 
-	msg := fmt.Sprintf("sending send message request, content: %s", input)
-	logging.Log(logging.Client{Username: c.username}, "send message", msg, c.clock.Get())
-
 	resp, err := c.client.SendMessage(context.Background(), &proto.SendMessageRequest{
 		Message: &proto.ChatMessage{
 			Username: c.username,
@@ -98,7 +91,6 @@ func (c *chitChatClient) sendMessage(input string, logger *log.Logger) error {
 		LogicalTimestamp: c.clock.Get(),
 	})
 	c.clock.Update(resp.LogicalTimestamp)
-	logging.Log(logging.Client{Username: c.username}, "send message", "send message request response received", c.clock.Get())
 
 	if err != nil {
 		logger.Printf("failed to send message: %v", err)
@@ -129,7 +121,7 @@ func (c *chitChatClient) waitForInput(logger *log.Logger) {
 		}
 
 		if utf8.RuneCountInString(input) > characterLimit {
-			logging.Log(logging.Client{Username: c.username}, "user input", "message too long", c.clock.Get())
+			logger.Printf("user input (timestamp: %d) ", "message too long \n", c.clock.Get())
 			fmt.Println("Message rejected. Maximum of 128 characters allowed.")
 			continue
 		}
@@ -149,7 +141,6 @@ func formatMessage(msg *proto.ReceiveMessagesResponse) string {
 func (c *chitChatClient) receiveMessages(logger *log.Logger) {
 	c.clock.Increment()
 
-	logging.Log(logging.Client{Username: c.username}, "receive messages", "sending receive messages request", c.clock.Get())
 	stream, err := c.client.ReceiveMessages(
 		context.Background(),
 		&proto.ReceiveMessagesRequest{
@@ -157,7 +148,6 @@ func (c *chitChatClient) receiveMessages(logger *log.Logger) {
 			LogicalTimestamp: c.clock.Get(),
 		},
 	)
-	logging.Log(logging.Client{Username: c.username}, "receive messages", "receive messages request response received", c.clock.Get())
 
 	if err != nil {
 		logger.Fatalf("failed to receive messages: %v", err)
@@ -170,7 +160,6 @@ func (c *chitChatClient) receiveMessages(logger *log.Logger) {
 			break
 		}
 		c.clock.Update(resp.LogicalTimestamp)
-		logging.Log(logging.Client{Username: c.username}, "receive messages", "received response from stream", c.clock.Get())
 
 		if err != nil {
 			logger.Printf("failed to read from messages stream: %v", err)
@@ -191,7 +180,7 @@ func (c *chitChatClient) receiveMessages(logger *log.Logger) {
 			c.username, eventType, c.clock.Get(), resp.Message.Content)
 	}
 
-	c.leave()
+	c.leave(logger)
 	os.Exit(0)
 }
 
