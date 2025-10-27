@@ -18,7 +18,8 @@ import (
 type chitChatServer struct {
 	proto.UnimplementedChitChatServer
 
-	clock common.LamportClock
+	clock  common.LamportClock
+	logger *log.Logger
 
 	mu            sync.Mutex
 	activeClients map[string]proto.ChitChat_ReceiveMessagesServer
@@ -72,6 +73,14 @@ func (s *chitChatServer) SendMessage(ctx context.Context, in *proto.SendMessageR
 		LogicalTimestamp: s.clock.Get(),
 	}
 
+	// Determine event type for logging
+	eventType := "USER_MESSAGE"
+	if in.Message.Type == proto.MessageType_SYSTEM_JOIN {
+		eventType = "SYSTEM_JOIN"
+	} else if in.Message.Type == proto.MessageType_SYSTEM_LEAVE {
+		eventType = "SYSTEM_LEAVE"
+	}
+
 	s.mu.Lock()
 	for username, stream := range s.activeClients {
 		if username == in.Message.Username {
@@ -79,8 +88,12 @@ func (s *chitChatServer) SendMessage(ctx context.Context, in *proto.SendMessageR
 		}
 
 		if err := stream.Send(response); err != nil {
-			msg := fmt.Sprintf("failed to send message to client '%s': %v", username, err)
-			logging.Log(logging.Server{}, "send message", msg, s.clock.Get())
+			s.logger.Printf("[component: server] [client: %s] [event: SEND_ERROR] [timestamp: %d] [error: %v]",
+				username, s.clock.Get(), err)
+		} else {
+			// Log successful message broadcast to each client
+			s.logger.Printf("[component: server] [client: %s] [event: %s] [timestamp: %d] [content: %s]",
+				username, eventType, s.clock.Get(), in.Message.Content)
 		}
 	}
 	s.mu.Unlock()
@@ -98,10 +111,15 @@ func (s *chitChatServer) ReceiveMessages(in *proto.ReceiveMessagesRequest, strea
 	s.activeClients[in.Username] = stream
 	s.mu.Unlock()
 
+	// Log broadcasting join message
+	s.logger.Printf("[component: server] [client: %s] [event: BROADCAST_JOIN] [timestamp: %d] [content: broadcasting join message]",
+		in.Username, s.clock.Get())
+
 	s.SendMessage(context.Background(), &proto.SendMessageRequest{
 		Message: &proto.ChatMessage{
-			Type:    proto.MessageType_SYSTEM_JOIN,
-			Content: fmt.Sprintf("Participant %s has joined Chit Chat at logical time %d", in.Username, s.clock.Get()),
+			Username: in.Username, // Set username so the sender doesn't receive their own join message
+			Type:     proto.MessageType_SYSTEM_JOIN,
+			Content:  fmt.Sprintf("Participant %s has joined Chit Chat at logical time %d", in.Username, s.clock.Get()),
 		},
 		LogicalTimestamp: s.clock.Get(),
 	})
@@ -115,10 +133,19 @@ func (s *chitChatServer) ReceiveMessages(in *proto.ReceiveMessagesRequest, strea
 	delete(s.activeClients, in.Username)
 	s.mu.Unlock()
 
+	// Log broadcasting leave message
+	s.logger.Printf("[component: server] [client: %s] [event: BROADCAST_LEAVE] [timestamp: %d] [content: broadcasting leave message]",
+		in.Username, s.clock.Get())
+
+	// Log broadcasting leave message
+	s.logger.Printf("[component: server] [client: %s] [event: BROADCAST_LEAVE] [timestamp: %d] [content: broadcasting leave message]",
+		in.Username, s.clock.Get())
+
 	s.SendMessage(context.Background(), &proto.SendMessageRequest{
 		Message: &proto.ChatMessage{
-			Type:    proto.MessageType_SYSTEM_LEAVE,
-			Content: fmt.Sprintf("Participant %s has left Chit Chat at logical time %d", in.Username, s.clock.Get()),
+			Username: in.Username, // Set username so the sender doesn't receive their own leave message
+			Type:     proto.MessageType_SYSTEM_LEAVE,
+			Content:  fmt.Sprintf("Participant %s has left Chit Chat at logical time %d", in.Username, s.clock.Get()),
 		},
 		LogicalTimestamp: s.clock.Get(),
 	})
@@ -127,9 +154,16 @@ func (s *chitChatServer) ReceiveMessages(in *proto.ReceiveMessagesRequest, strea
 }
 
 func main() {
-	chitChatServer := &chitChatServer{
+	file, err := os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("failed to open log file: %v\n", err)
+	}
+	logger := log.New(file, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+
+	server := &chitChatServer{
 		activeClients: make(map[string]proto.ChitChat_ReceiveMessagesServer, 0),
 		clock:         common.NewLamportClock(),
+		logger:        logger,
 	}
 
 	grpcServer := grpc.NewServer()
@@ -139,31 +173,38 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for sig := range c {
-			msg := fmt.Sprintf("signal: '%s' received, shutting down", sig.String())
-			chitChatServer.clock.Increment()
-
-			logging.Log(logging.Server{}, "os.Interrupt", msg, chitChatServer.clock.Get())
-
-			grpcServer.GracefulStop()
-
-			logging.Log(logging.Server{}, "os.Interrupt", "server stopped, exiting", chitChatServer.clock.Get())
+			// Log server shutdown
+			logger.Printf("[component: server] [event: SHUTDOWN] [timestamp: %d] [signal: %s]",
+				server.clock.Get(), sig.String())
+			fmt.Printf("server shutdown: %s (timestamp: %d)\n", sig.String(), server.clock.Get())
 			os.Exit(0)
 		}
 	}()
 
-	chitChatServer.start(grpcServer)
+	server.start(logger)
+
 }
 
-func (s *chitChatServer) start(server *grpc.Server) {
+func (s *chitChatServer) start(logger *log.Logger) {
+
+	server := grpc.NewServer()
+
 	network := "tcp"
 	port := ":5050"
 
 	listener, err := net.Listen(network, port)
 	if err != nil {
-		log.Fatalf("failed to create a %s listener on port %s: %v\n", network, port, err)
+		logger.Fatalf("failed to create a %s listener on port %s: %v\n", network, port, err)
 	}
 
+	proto.RegisterChitChatServer(server, s)
+
+	// Log server start
+	s.logger.Printf("[component: server] [event: START] [timestamp: %d] [address: %s%s]",
+		s.clock.Get(), network, port)
+	log.Printf("server started on %s%s (timestamp: %d)\n", network, port, s.clock.Get())
+
 	if err := server.Serve(listener); err != nil {
-		log.Fatalf("failed to start serving requests: %v", err)
+		logger.Fatalf("failed to start serving requests: %v", err)
 	}
 }

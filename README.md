@@ -25,12 +25,36 @@ protoc --go_out=. \
   grpc/proto.proto
 ```
 
-Running the application:
+### Running the application
 
 ```sh
-# To create a client, open a new terminal and run
-$ go run client/client.go
-
 # To create a server, open a new terminal and run
 $ go run server/server.go
+
+# To create a client, open a new terminal and run
+$ go run client/client.go
+```
+
+### Shutting down
+
+**Server:**
+- Press `Ctrl+C` to gracefully shutdown the server
+- The server will log the shutdown event and exit
+
+**Client:**
+- Press `Ctrl+C` to disconnect and exit
+- Type `LEAVE` (all caps) and press Enter to gracefully leave the chat and exit
+
+Both methods will trigger proper cleanup and logging.
+
+### Troubleshooting
+
+If you need to stop old server instances you can use:
+
+```sh
+# Find processes on port 5050
+lsof -ti:5050
+
+# Kill them
+kill -9 $(lsof -ti:5050)
 ```

@@ -1,0 +1,45 @@
+INFO: 2025/10/27 17:30:00 server.go:183: [component: server] [event: START] [timestamp: 0] [address: tcp:5050]
+INFO: 2025/10/27 17:30:22 client.go:203: [component: client] [client: Miguel] [event: START] [timestamp: 0] [content: client started]
+INFO: 2025/10/27 17:30:22 client.go:54: [component: client] [client: Miguel] [event: JOIN] [timestamp: 3] [content: joined chat]
+INFO: 2025/10/27 17:30:22 client.go:153: [client Miguel]: receiving messages: (timestamp: 4)
+INFO: 2025/10/27 17:30:22 server.go:103: [component: server] [client: Miguel] [event: BROADCAST_JOIN] [timestamp: 5] [content: broadcasting join message]
+INFO: 2025/10/27 17:30:24 client.go:98: [client Miguel]: message sent: (timestamp: 8) (content: Hellow!)
+INFO: 2025/10/27 17:30:33 client.go:203: [component: client] [client: Tomas] [event: START] [timestamp: 0] [content: client started]
+INFO: 2025/10/27 17:30:33 client.go:54: [component: client] [client: Tomas] [event: JOIN] [timestamp: 9] [content: joined chat]
+INFO: 2025/10/27 17:30:33 client.go:153: [client Tomas]: receiving messages: (timestamp: 10)
+INFO: 2025/10/27 17:30:33 server.go:103: [component: server] [client: Tomas] [event: BROADCAST_JOIN] [timestamp: 11] [content: broadcasting join message]
+INFO: 2025/10/27 17:30:33 server.go:84: [component: server] [client: Miguel] [event: SYSTEM_JOIN] [timestamp: 12] [content: Participant Tomas has joined Chit Chat at logical time 11]
+INFO: 2025/10/27 17:30:33 client.go:177: [component: client] [client: Miguel] [event: SYSTEM_JOIN] [timestamp: 13] [content: Participant Tomas has joined Chit Chat at logical time 11]
+INFO: 2025/10/27 17:30:37 server.go:84: [component: server] [client: Miguel] [event: USER_MESSAGE] [timestamp: 13] [content: Hi there!]
+INFO: 2025/10/27 17:30:37 client.go:177: [component: client] [client: Miguel] [event: USER_MESSAGE] [timestamp: 14] [content: Hi there!]
+INFO: 2025/10/27 17:30:37 client.go:98: [client Tomas]: message sent: (timestamp: 14) (content: Hi there!)
+INFO: 2025/10/27 17:31:04 client.go:203: [component: client] [client: Good afternoon guys, so happy to joing the chitChat with you] [event: START] [timestamp: 0] [content: client started]
+INFO: 2025/10/27 17:31:04 client.go:54: [component: client] [client: Good afternoon guys, so happy to joing the chitChat with you] [event: JOIN] [timestamp: 15] [content: joined chat]
+INFO: 2025/10/27 17:31:04 client.go:153: [client Good afternoon guys, so happy to joing the chitChat with you]: receiving messages: (timestamp: 16)
+INFO: 2025/10/27 17:31:04 server.go:103: [component: server] [client: Good afternoon guys, so happy to joing the chitChat with you] [event: BROADCAST_JOIN] [timestamp: 17] [content: broadcasting join message]
+INFO: 2025/10/27 17:31:04 server.go:84: [component: server] [client: Tomas] [event: SYSTEM_JOIN] [timestamp: 18] [content: Participant Good afternoon guys, so happy to joing the chitChat with you has joined Chit Chat at logical time 17]
+INFO: 2025/10/27 17:31:04 server.go:84: [component: server] [client: Miguel] [event: SYSTEM_JOIN] [timestamp: 18] [content: Participant Good afternoon guys, so happy to joing the chitChat with you has joined Chit Chat at logical time 17]
+INFO: 2025/10/27 17:31:04 client.go:177: [component: client] [client: Miguel] [event: SYSTEM_JOIN] [timestamp: 19] [content: Participant Good afternoon guys, so happy to joing the chitChat with you has joined Chit Chat at logical time 17]
+INFO: 2025/10/27 17:31:04 client.go:177: [component: client] [client: Tomas] [event: SYSTEM_JOIN] [timestamp: 19] [content: Participant Good afternoon guys, so happy to joing the chitChat with you has joined Chit Chat at logical time 17]
+INFO: 2025/10/27 17:31:20 server.go:84: [component: server] [client: Tomas] [event: USER_MESSAGE] [timestamp: 21] [content: Pity, but now I have to leave]
+INFO: 2025/10/27 17:31:20 client.go:177: [component: client] [client: Tomas] [event: USER_MESSAGE] [timestamp: 22] [content: Pity, but now I have to leave]
+INFO: 2025/10/27 17:31:20 server.go:84: [component: server] [client: Good afternoon guys, so happy to joing the chitChat with you] [event: USER_MESSAGE] [timestamp: 21] [content: Pity, but now I have to leave]
+INFO: 2025/10/27 17:31:20 client.go:98: [client Miguel]: message sent: (timestamp: 22) (content: Pity, but now I have to leave)
+INFO: 2025/10/27 17:31:20 client.go:177: [component: client] [client: Good afternoon guys, so happy to joing the chitChat with you] [event: USER_MESSAGE] [timestamp: 22] [content: Pity, but now I have to leave]
+INFO: 2025/10/27 17:31:22 client.go:75: [component: client] [client: Miguel] [event: LEAVE] [timestamp: 24] [content: left chat]
+INFO: 2025/10/27 17:31:22 server.go:124: [component: server] [client: Miguel] [event: BROADCAST_LEAVE] [timestamp: 25] [content: broadcasting leave message]
+INFO: 2025/10/27 17:31:22 server.go:84: [component: server] [client: Tomas] [event: SYSTEM_LEAVE] [timestamp: 26] [content: Participant Miguel has left Chit Chat at logical time 25]
+INFO: 2025/10/27 17:31:22 server.go:84: [component: server] [client: Good afternoon guys, so happy to joing the chitChat with you] [event: SYSTEM_LEAVE] [timestamp: 26] [content: Participant Miguel has left Chit Chat at logical time 25]
+INFO: 2025/10/27 17:31:22 client.go:177: [component: client] [client: Tomas] [event: SYSTEM_LEAVE] [timestamp: 27] [content: Participant Miguel has left Chit Chat at logical time 25]
+INFO: 2025/10/27 17:31:22 client.go:177: [component: client] [client: Good afternoon guys, so happy to joing the chitChat with you] [event: SYSTEM_LEAVE] [timestamp: 27] [content: Participant Miguel has left Chit Chat at logical time 25]
+INFO: 2025/10/27 17:31:37 server.go:84: [component: server] [client: Good afternoon guys, so happy to joing the chitChat with you] [event: USER_MESSAGE] [timestamp: 29] [content: Yes, sadly, me too]
+INFO: 2025/10/27 17:31:37 client.go:98: [client Tomas]: message sent: (timestamp: 30) (content: Yes, sadly, me too)
+INFO: 2025/10/27 17:31:37 client.go:177: [component: client] [client: Good afternoon guys, so happy to joing the chitChat with you] [event: USER_MESSAGE] [timestamp: 30] [content: Yes, sadly, me too]
+INFO: 2025/10/27 17:31:39 client.go:75: [component: client] [client: Tomas] [event: LEAVE] [timestamp: 32] [content: left chat]
+INFO: 2025/10/27 17:31:39 server.go:124: [component: server] [client: Tomas] [event: BROADCAST_LEAVE] [timestamp: 33] [content: broadcasting leave message]
+INFO: 2025/10/27 17:31:39 server.go:84: [component: server] [client: Good afternoon guys, so happy to joing the chitChat with you] [event: SYSTEM_LEAVE] [timestamp: 34] [content: Participant Tomas has left Chit Chat at logical time 33]
+INFO: 2025/10/27 17:31:39 client.go:177: [component: client] [client: Good afternoon guys, so happy to joing the chitChat with you] [event: SYSTEM_LEAVE] [timestamp: 35] [content: Participant Tomas has left Chit Chat at logical time 33]
+INFO: 2025/10/27 17:31:53 client.go:98: [client Good afternoon guys, so happy to joing the chitChat with you]: message sent: (timestamp: 38) (content: Oh!)
+INFO: 2025/10/27 17:31:55 client.go:75: [component: client] [client: Good afternoon guys, so happy to joing the chitChat with you] [event: LEAVE] [timestamp: 40] [content: left chat]
+INFO: 2025/10/27 17:31:55 server.go:124: [component: server] [client: Good afternoon guys, so happy to joing the chitChat with you] [event: BROADCAST_LEAVE] [timestamp: 41] [content: broadcasting leave message]
+INFO: 2025/10/27 17:32:01 server.go:157: [component: server] [event: SHUTDOWN] [timestamp: 42] [signal: interrupt]

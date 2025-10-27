@@ -23,18 +23,20 @@ const characterLimit = 128
 type chitChatClient struct {
 	client   proto.ChitChatClient
 	clock    common.LamportClock
+	logger   *log.Logger
 	username string
 }
 
-func newChitChatClient(conn *grpc.ClientConn, username string) *chitChatClient {
+func newChitChatClient(conn *grpc.ClientConn, username string, logger *log.Logger) *chitChatClient {
 	return &chitChatClient{
 		client:   proto.NewChitChatClient(conn),
 		username: username,
 		clock:    common.NewLamportClock(),
+		logger:   logger,
 	}
 }
 
-func (c *chitChatClient) join() error {
+func (c *chitChatClient) join(logger *log.Logger) error {
 	c.clock.Increment()
 
 	logging.Log(logging.Client{Username: c.username}, "join", "sending join request", c.clock.Get())
@@ -46,18 +48,21 @@ func (c *chitChatClient) join() error {
 	logging.Log(logging.Client{Username: c.username}, "join", "join request response received", c.clock.Get())
 
 	if err != nil {
-		msg := fmt.Sprintf("failed to join: %v", err)
-		logging.Log(logging.Client{Username: c.username}, "join", msg, c.clock.Get())
-		return fmt.Errorf("%s", msg)
-	}
+		logger.Fatalf("failed to join: %v", err)
+		return err
 
-	logging.Log(logging.Client{Username: c.username}, "join", "joined", c.clock.Get())
+	}
+	c.clock.Update(resp.LogicalTimestamp)
+
+	// Log client join
+	c.logger.Printf("[component: client] [client: %s] [event: JOIN] [timestamp: %d] [content: joined chat]",
+		c.username, c.clock.Get())
+
 	return nil
 }
 
-func (c *chitChatClient) leave() error {
+func (c *chitChatClient) leave(logger *log.Logger) error {
 	c.clock.Increment()
-	logging.Log(logging.Client{Username: c.username}, "leave", "sending leave request", c.clock.Get())
 
 	resp, err := c.client.Leave(context.Background(), &proto.LeaveRequest{
 		Username:         c.username,
@@ -67,15 +72,18 @@ func (c *chitChatClient) leave() error {
 	logging.Log(logging.Client{Username: c.username}, "leave", "leave request response received", c.clock.Get())
 
 	if err != nil {
-		msg := fmt.Sprintf("failed to leave: %v", err)
-		logging.Log(logging.Client{Username: c.username}, "leave", msg, c.clock.Get())
-		return fmt.Errorf("%s", msg)
+		logger.Fatalf("[client %s]: failed to leave: %v", c.username, err)
+		return err
 	}
+
+	// Log client leave
+	c.logger.Printf("[component: client] [client: %s] [event: LEAVE] [timestamp: %d] [content: left chat]",
+		c.username, c.clock.Get())
 
 	return nil
 }
 
-func (c *chitChatClient) sendMessage(input string) error {
+func (c *chitChatClient) sendMessage(input string, logger *log.Logger) error {
 	c.clock.Increment()
 
 	msg := fmt.Sprintf("sending send message request, content: %s", input)
@@ -93,20 +101,32 @@ func (c *chitChatClient) sendMessage(input string) error {
 	logging.Log(logging.Client{Username: c.username}, "send message", "send message request response received", c.clock.Get())
 
 	if err != nil {
-		msg := fmt.Sprintf("failed to send message: %v", err)
-		logging.Log(logging.Client{Username: c.username}, "send message", msg, c.clock.Get())
-		return fmt.Errorf("%s", msg)
+		logger.Printf("failed to send message: %v", err)
+		return fmt.Errorf("failed to send message: %v", err)
 	}
+	logger.Printf("[client %s]: message sent: (timestamp: %d) (content: %s)\n", c.username, c.clock.Get(), input)
 
 	return nil
 }
 
-func (c *chitChatClient) waitForInput() {
+func (c *chitChatClient) waitForInput(logger *log.Logger) {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	for {
 		scanner.Scan()
 		input := scanner.Text()
+
+		// Skip empty messages
+		if len(input) == 0 {
+			continue
+		}
+
+		// Check if user wants to leave
+		if input == "LEAVE" {
+			c.leave(logger)
+			fmt.Println("You have left the chat.")
+			os.Exit(0)
+		}
 
 		if utf8.RuneCountInString(input) > characterLimit {
 			logging.Log(logging.Client{Username: c.username}, "user input", "message too long", c.clock.Get())
@@ -114,7 +134,7 @@ func (c *chitChatClient) waitForInput() {
 			continue
 		}
 
-		c.sendMessage(input)
+		c.sendMessage(input, logger)
 	}
 }
 
@@ -126,7 +146,7 @@ func formatMessage(msg *proto.ReceiveMessagesResponse) string {
 	return fmt.Sprintf("[%s] %d: %s\n", msg.Message.Username, msg.LogicalTimestamp, msg.Message.Content)
 }
 
-func (c *chitChatClient) receiveMessages() {
+func (c *chitChatClient) receiveMessages(logger *log.Logger) {
 	c.clock.Increment()
 
 	logging.Log(logging.Client{Username: c.username}, "receive messages", "sending receive messages request", c.clock.Get())
@@ -140,9 +160,9 @@ func (c *chitChatClient) receiveMessages() {
 	logging.Log(logging.Client{Username: c.username}, "receive messages", "receive messages request response received", c.clock.Get())
 
 	if err != nil {
-		msg := fmt.Sprintf("failed to receive messages: %v", err)
-		logging.Log(logging.Client{Username: c.username}, "receive messages", msg, c.clock.Get())
+		logger.Fatalf("failed to receive messages: %v", err)
 	}
+	logger.Printf("[client %s]: receiving messages: (timestamp: %d)\n", c.username, c.clock.Get())
 
 	for {
 		resp, err := stream.Recv()
@@ -153,20 +173,22 @@ func (c *chitChatClient) receiveMessages() {
 		logging.Log(logging.Client{Username: c.username}, "receive messages", "received response from stream", c.clock.Get())
 
 		if err != nil {
-			msg := fmt.Sprintf("failed to read message from stream: %v", err)
-			logging.Log(logging.Client{Username: c.username}, "receive messages", msg, c.clock.Get())
+			logger.Printf("failed to read from messages stream: %v", err)
 			continue
 		}
 
 		fmt.Printf("%s", formatMessage(resp))
-	}
-}
 
-func (c *chitChatClient) gracefulStop(sig os.Signal) {
-	if sig == nil {
-		log.Printf("[client %s] shutting down\n", c.username)
-	} else {
-		log.Printf("[client %s] shutting down: %s\n", c.username, sig.String())
+		// Log message reception with all required details
+		eventType := "USER_MESSAGE"
+		if resp.Message.Type == proto.MessageType_SYSTEM_JOIN {
+			eventType = "SYSTEM_JOIN"
+		} else if resp.Message.Type == proto.MessageType_SYSTEM_LEAVE {
+			eventType = "SYSTEM_LEAVE"
+		}
+
+		c.logger.Printf("[component: client] [client: %s] [event: %s] [timestamp: %d] [content: %s]",
+			c.username, eventType, c.clock.Get(), resp.Message.Content)
 	}
 
 	c.leave()
@@ -174,10 +196,15 @@ func (c *chitChatClient) gracefulStop(sig os.Signal) {
 }
 
 func main() {
+	file, err := os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+	logger := log.New(file, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
 
 	conn, err := grpc.NewClient("localhost:5050", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("failed to create client: %v", err)
+		logger.Fatalf("failed to create client: %v", err)
 	}
 	defer conn.Close()
 
@@ -186,21 +213,31 @@ func main() {
 	scanner.Scan()
 	username := scanner.Text()
 
-	client := newChitChatClient(conn, username)
-	logging.Log(logging.Client{Username: client.username}, "client startup", "new client started", client.clock.Get())
+	client := newChitChatClient(conn, username, logger)
 
-	if err = client.join(); err != nil {
-		client.gracefulStop(nil)
+	// Log client start
+	client.logger.Printf("[component: client] [client: %s] [event: START] [timestamp: %d] [content: client started]",
+		client.username, client.clock.Get())
+
+	if err = client.join(logger); err != nil {
+		logger.Fatalf("failed to join: %v", err)
 	}
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for sig := range c {
-			client.gracefulStop(sig)
+			// Log client shutdown
+			client.logger.Printf("[component: client] [client: %s] [event: SHUTDOWN] [timestamp: %d] [signal: %s]",
+				client.username, client.clock.Get(), sig.String())
+			log.Printf("[client %s] shutting down: %s\n", client.username, sig.String())
+
+			client.leave(logger)
+
+			os.Exit(0)
 		}
 	}()
 
-	go client.receiveMessages()
-	client.waitForInput()
+	go client.receiveMessages(logger)
+	client.waitForInput(logger)
 }
