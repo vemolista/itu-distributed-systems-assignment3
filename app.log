@@ -1,34 +1,24 @@
-INFO: 2025/10/27 18:26:58 server.go:188: [component: server] [event: START] [timestamp: 0] [address: tcp:5050]
-INFO: 2025/10/27 18:27:12 client.go:208: [component: client] [client: Miguel] [event: START] [timestamp: 0] [content: client started]
-INFO: 2025/10/27 18:27:12 client.go:55: [component: client] [client: Miguel] [event: JOIN] [timestamp: 4] [content: joined chat]
-INFO: 2025/10/27 18:27:12 client.go:155: [client Miguel]: receiving messages: (timestamp: 5)
-INFO: 2025/10/27 18:27:12 server.go:105: [component: server] [client: Miguel] [event: BROADCAST_JOIN] [timestamp: 6] [content: broadcasting join message]
-INFO: 2025/10/27 18:27:42 client.go:208: [component: client] [client: Ula] [event: START] [timestamp: 0] [content: client started]
-INFO: 2025/10/27 18:27:42 client.go:55: [component: client] [client: Ula] [event: JOIN] [timestamp: 10] [content: joined chat]
-INFO: 2025/10/27 18:27:42 server.go:105: [component: server] [client: Ula] [event: BROADCAST_JOIN] [timestamp: 12] [content: broadcasting join message]
-INFO: 2025/10/27 18:27:42 client.go:155: [client Ula]: receiving messages: (timestamp: 11)
-INFO: 2025/10/27 18:27:42 server.go:86: [component: server] [client: Miguel] [event: SYSTEM_JOIN] [timestamp: 13] [content: Participant Ula has joined Chit Chat at logical time 12]
-INFO: 2025/10/27 18:27:42 client.go:179: [component: client] [client: Miguel] [event: SYSTEM_JOIN] [timestamp: 14] [content: Participant Ula has joined Chit Chat at logical time 12]
-INFO: 2025/10/27 18:27:49 server.go:86: [component: server] [client: Miguel] [event: USER_MESSAGE] [timestamp: 14] [content: Hellow]
-INFO: 2025/10/27 18:27:49 client.go:99: [client Ula]: message sent: (timestamp: 15) (content: Hellow)
-INFO: 2025/10/27 18:27:49 client.go:179: [component: client] [client: Miguel] [event: USER_MESSAGE] [timestamp: 15] [content: Hellow]
-INFO: 2025/10/27 18:27:58 server.go:86: [component: server] [client: Ula] [event: USER_MESSAGE] [timestamp: 17] [content: Hi there]
-INFO: 2025/10/27 18:27:58 client.go:179: [component: client] [client: Ula] [event: USER_MESSAGE] [timestamp: 18] [content: Hi there]
-INFO: 2025/10/27 18:27:58 client.go:99: [client Miguel]: message sent: (timestamp: 18) (content: Hi there)
-INFO: 2025/10/27 18:28:03 server.go:86: [component: server] [client: Ula] [event: USER_MESSAGE] [timestamp: 20] [content: What time is it there?]
-INFO: 2025/10/27 18:28:03 client.go:179: [component: client] [client: Ula] [event: USER_MESSAGE] [timestamp: 21] [content: What time is it there?]
-INFO: 2025/10/27 18:28:03 client.go:99: [client Miguel]: message sent: (timestamp: 21) (content: What time is it there?)
-INFO: 2025/10/27 18:28:12 server.go:86: [component: server] [client: Miguel] [event: USER_MESSAGE] [timestamp: 23] [content: A higher time that yours surelt]
-INFO: 2025/10/27 18:28:12 client.go:179: [component: client] [client: Miguel] [event: USER_MESSAGE] [timestamp: 24] [content: A higher time that yours surelt]
-INFO: 2025/10/27 18:28:12 client.go:99: [client Ula]: message sent: (timestamp: 24) (content: A higher time that yours surelt)
-INFO: 2025/10/27 18:28:19 server.go:86: [component: server] [client: Miguel] [event: USER_MESSAGE] [timestamp: 26] [content: *surely]
-INFO: 2025/10/27 18:28:19 client.go:179: [component: client] [client: Miguel] [event: USER_MESSAGE] [timestamp: 27] [content: *surely]
-INFO: 2025/10/27 18:28:19 client.go:99: [client Ula]: message sent: (timestamp: 27) (content: *surely)
-INFO: 2025/10/27 18:28:21 client.go:76: [component: client] [client: Ula] [event: LEAVE] [timestamp: 29] [content: left chat]
-INFO: 2025/10/27 18:28:21 server.go:126: [component: server] [client: Ula] [event: BROADCAST_LEAVE] [timestamp: 30] [content: broadcasting leave message]
-INFO: 2025/10/27 18:28:21 server.go:86: [component: server] [client: Miguel] [event: SYSTEM_LEAVE] [timestamp: 31] [content: Participant Ula has left Chit Chat at logical time 30]
-INFO: 2025/10/27 18:28:21 client.go:179: [component: client] [client: Miguel] [event: SYSTEM_LEAVE] [timestamp: 32] [content: Participant Ula has left Chit Chat at logical time 30]
-INFO: 2025/10/27 18:28:26 client.go:99: [client Miguel]: message sent: (timestamp: 35) (content: leave)
-INFO: 2025/10/27 18:28:28 client.go:76: [component: client] [client: Miguel] [event: LEAVE] [timestamp: 37] [content: left chat]
-INFO: 2025/10/27 18:28:28 server.go:126: [component: server] [client: Miguel] [event: BROADCAST_LEAVE] [timestamp: 38] [content: broadcasting leave message]
-INFO: 2025/10/27 18:28:32 server.go:162: [component: server] [event: SHUTDOWN] [timestamp: 39] [signal: interrupt]
+INFO: 2025/10/27 20:22:07 server.go:188: [component: server] [event: START] [timestamp: 0] [address: tcp:5050]
+INFO: 2025/10/27 20:22:13 client.go:208: [component: client] [client: User1] [event: START] [timestamp: 0] [content: client started]
+INFO: 2025/10/27 20:22:13 client.go:55: [component: client] [client: User1] [event: JOIN] [timestamp: 4] [content: joined chat]
+INFO: 2025/10/27 20:22:13 client.go:155: [client User1]: receiving messages: (timestamp: 5)
+INFO: 2025/10/27 20:22:13 server.go:105: [component: server] [client: User1] [event: BROADCAST_JOIN] [timestamp: 6] [content: broadcasting join message]
+INFO: 2025/10/27 20:22:19 client.go:208: [component: client] [client: User2] [event: START] [timestamp: 0] [content: client started]
+INFO: 2025/10/27 20:22:19 client.go:55: [component: client] [client: User2] [event: JOIN] [timestamp: 10] [content: joined chat]
+INFO: 2025/10/27 20:22:19 client.go:155: [client User2]: receiving messages: (timestamp: 11)
+INFO: 2025/10/27 20:22:19 server.go:105: [component: server] [client: User2] [event: BROADCAST_JOIN] [timestamp: 12] [content: broadcasting join message]
+INFO: 2025/10/27 20:22:19 server.go:86: [component: server] [client: User1] [event: SYSTEM_JOIN] [timestamp: 13] [content: Participant User2 has joined Chit Chat at logical time 12]
+INFO: 2025/10/27 20:22:19 client.go:179: [component: client] [client: User1] [event: SYSTEM_JOIN] [timestamp: 14] [content: Participant User2 has joined Chit Chat at logical time 12]
+INFO: 2025/10/27 20:22:39 server.go:86: [component: server] [client: User1] [event: USER_MESSAGE] [timestamp: 14] [content: Test]
+INFO: 2025/10/27 20:22:39 client.go:179: [component: client] [client: User1] [event: USER_MESSAGE] [timestamp: 15] [content: Test]
+INFO: 2025/10/27 20:22:39 client.go:99: [client User2]: message sent: (timestamp: 15) (content: Test)
+INFO: 2025/10/27 20:22:44 server.go:86: [component: server] [client: User2] [event: USER_MESSAGE] [timestamp: 17] [content: Received]
+INFO: 2025/10/27 20:22:44 client.go:179: [component: client] [client: User2] [event: USER_MESSAGE] [timestamp: 18] [content: Received]
+INFO: 2025/10/27 20:22:44 client.go:99: [client User1]: message sent: (timestamp: 18) (content: Received)
+INFO: 2025/10/27 20:22:46 client.go:76: [component: client] [client: User1] [event: LEAVE] [timestamp: 20] [content: left chat]
+INFO: 2025/10/27 20:22:46 server.go:126: [component: server] [client: User1] [event: BROADCAST_LEAVE] [timestamp: 21] [content: broadcasting leave message]
+INFO: 2025/10/27 20:22:46 server.go:86: [component: server] [client: User2] [event: SYSTEM_LEAVE] [timestamp: 22] [content: Participant User1 has left Chit Chat at logical time 21]
+INFO: 2025/10/27 20:22:46 client.go:179: [component: client] [client: User2] [event: SYSTEM_LEAVE] [timestamp: 23] [content: Participant User1 has left Chit Chat at logical time 21]
+INFO: 2025/10/27 20:22:51 client.go:76: [component: client] [client: User2] [event: LEAVE] [timestamp: 25] [content: left chat]
+INFO: 2025/10/27 20:22:51 server.go:126: [component: server] [client: User2] [event: BROADCAST_LEAVE] [timestamp: 26] [content: broadcasting leave message]
+INFO: 2025/10/27 20:22:55 server.go:162: [component: server] [event: SHUTDOWN] [timestamp: 27] [signal: interrupt]
