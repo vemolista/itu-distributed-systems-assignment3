@@ -107,9 +107,8 @@ func (s *chitChatServer) ReceiveMessages(in *proto.ReceiveMessagesRequest, strea
 
 	s.SendMessage(context.Background(), &proto.SendMessageRequest{
 		Message: &proto.ChatMessage{
-			Username: in.Username, // Set username so the sender doesn't receive their own join message
-			Type:     proto.MessageType_SYSTEM_JOIN,
-			Content:  fmt.Sprintf("Participant %s has joined Chit Chat at logical time %d", in.Username, s.clock.Get()),
+			Type:    proto.MessageType_SYSTEM_JOIN,
+			Content: fmt.Sprintf("Participant %s has joined Chit Chat at logical time %d", in.Username, s.clock.Get()),
 		},
 		LogicalTimestamp: s.clock.Get(),
 	})
@@ -128,9 +127,8 @@ func (s *chitChatServer) ReceiveMessages(in *proto.ReceiveMessagesRequest, strea
 
 	s.SendMessage(context.Background(), &proto.SendMessageRequest{
 		Message: &proto.ChatMessage{
-			Username: in.Username, // Set username so the sender doesn't receive their own leave message
-			Type:     proto.MessageType_SYSTEM_LEAVE,
-			Content:  fmt.Sprintf("Participant %s has left Chit Chat at logical time %d", in.Username, s.clock.Get()),
+			Type:    proto.MessageType_SYSTEM_LEAVE,
+			Content: fmt.Sprintf("Participant %s has left Chit Chat at logical time %d", in.Username, s.clock.Get()),
 		},
 		LogicalTimestamp: s.clock.Get(),
 	})
