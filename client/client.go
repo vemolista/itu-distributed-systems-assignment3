@@ -36,51 +36,57 @@ func newChitChatClient(conn *grpc.ClientConn, username string, logger *log.Logge
 }
 
 func (c *chitChatClient) join(logger *log.Logger) error {
-	c.clock.Increment()
+	// increment before sending join request and remember the send timestamp
+	sendTs := c.clock.Increment()
 
 	resp, err := c.client.Join(context.Background(), &proto.JoinRequest{
 		Username:         c.username,
-		LogicalTimestamp: c.clock.Get(),
+		LogicalTimestamp: sendTs,
 	})
-	c.clock.Update(resp.LogicalTimestamp)
-
 	if err != nil {
 		logger.Fatalf("failed to join: %v", err)
 		return err
-
 	}
-	c.clock.Update(resp.LogicalTimestamp)
 
-	// Log client join
+	// server-assigned timestamp for the join event
+	eventTs := resp.LogicalTimestamp
+	// update local clock using server timestamp
+	c.clock.Update(eventTs)
+
+	// Log client join using the event timestamp (matches server)
 	c.logger.Printf("[component: client] [client: %s] [event: JOIN] [timestamp: %d] [content: joined chat]",
-		c.username, c.clock.Get())
+		c.username, eventTs)
 
 	return nil
 }
 
 func (c *chitChatClient) leave(logger *log.Logger) error {
-	c.clock.Increment()
+	// increment and capture send timestamp
+	sendTs := c.clock.Increment()
 
 	resp, err := c.client.Leave(context.Background(), &proto.LeaveRequest{
 		Username:         c.username,
-		LogicalTimestamp: c.clock.Get(),
+		LogicalTimestamp: sendTs,
 	})
-	c.clock.Update(resp.LogicalTimestamp)
-
 	if err != nil {
 		logger.Fatalf("[client %s]: failed to leave: %v", c.username, err)
 		return err
 	}
 
-	// Log client leave
+	// server-assigned timestamp for the leave event
+	eventTs := resp.LogicalTimestamp
+	c.clock.Update(eventTs)
+
+	// Log client leave using the event timestamp
 	c.logger.Printf("[component: client] [client: %s] [event: LEAVE] [timestamp: %d] [content: left chat]",
-		c.username, c.clock.Get())
+		c.username, eventTs)
 
 	return nil
 }
 
 func (c *chitChatClient) sendMessage(input string, logger *log.Logger) error {
-	c.clock.Increment()
+	// increment and capture the timestamp used for the send request
+	sendTs := c.clock.Increment()
 
 	resp, err := c.client.SendMessage(context.Background(), &proto.SendMessageRequest{
 		Message: &proto.ChatMessage{
@@ -88,15 +94,21 @@ func (c *chitChatClient) sendMessage(input string, logger *log.Logger) error {
 			Content:  input,
 			Type:     proto.MessageType_USER_MESSAGE,
 		},
-		LogicalTimestamp: c.clock.Get(),
+		LogicalTimestamp: sendTs,
 	})
-	c.clock.Update(resp.LogicalTimestamp)
 
 	if err != nil {
 		logger.Printf("failed to send message: %v", err)
 		return fmt.Errorf("failed to send message: %v", err)
 	}
-	logger.Printf("[client %s]: message sent: (timestamp: %d) (content: %s)\n", c.username, c.clock.Get(), input)
+
+	// server-assigned timestamp for the message event
+	eventTs := resp.LogicalTimestamp
+	// update local clock using server timestamp
+	c.clock.Update(eventTs)
+
+	// Log message sent using the server-assigned/event timestamp so it matches server logs
+	logger.Printf("[client %s]: message sent: (timestamp: %d) (content: %s)\n", c.username, eventTs, input)
 
 	return nil
 }
@@ -121,7 +133,7 @@ func (c *chitChatClient) waitForInput(logger *log.Logger) {
 		}
 
 		if utf8.RuneCountInString(input) > characterLimit {
-			logger.Printf("user input (timestamp: %d) ", "message too long \n", c.clock.Get())
+			logger.Printf("user input: message too long (timestamp: %d)\n", c.clock.Get())
 			fmt.Println("Message rejected. Maximum of 128 characters allowed.")
 			continue
 		}
@@ -152,6 +164,7 @@ func (c *chitChatClient) receiveMessages(logger *log.Logger) {
 	if err != nil {
 		logger.Fatalf("failed to receive messages: %v", err)
 	}
+	// this timestamp is the local timestamp used when creating the stream
 	logger.Printf("[client %s]: receiving messages: (timestamp: %d)\n", c.username, c.clock.Get())
 
 	for {
@@ -159,16 +172,22 @@ func (c *chitChatClient) receiveMessages(logger *log.Logger) {
 		if err == io.EOF {
 			break
 		}
-		c.clock.Update(resp.LogicalTimestamp)
-
+		if err == io.EOF {
+			break
+		}
 		if err != nil {
 			logger.Printf("failed to read from messages stream: %v", err)
 			continue
 		}
 
+		// the logical timestamp attached to the message is the event timestamp
+		eventTs := resp.LogicalTimestamp
+		// update local clock using the event timestamp
+		c.clock.Update(eventTs)
+
 		fmt.Printf("%s", formatMessage(resp))
 
-		// Log message reception with all required details
+		// Log message reception with the event timestamp (matches server)
 		eventType := "USER_MESSAGE"
 		if resp.Message.Type == proto.MessageType_SYSTEM_JOIN {
 			eventType = "SYSTEM_JOIN"
@@ -177,7 +196,7 @@ func (c *chitChatClient) receiveMessages(logger *log.Logger) {
 		}
 
 		c.logger.Printf("[component: client] [client: %s] [event: %s] [timestamp: %d] [content: %s]",
-			c.username, eventType, c.clock.Get(), resp.Message.Content)
+			c.username, eventType, eventTs, resp.Message.Content)
 	}
 
 	c.leave(logger)
