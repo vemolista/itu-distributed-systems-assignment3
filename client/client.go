@@ -79,7 +79,7 @@ func (c *chitChatClient) leave(logger *log.Logger) error {
 
 	// Log client leave using the event timestamp
 	c.logger.Printf("[component: client] [client: %s] [event: LEAVE] [timestamp: %d] [content: left chat]",
-		c.username, eventTs)
+		c.username, c.clock.Get())
 
 	return nil
 }
